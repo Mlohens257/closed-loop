@@ -5,9 +5,10 @@
 
 ## How a reader uses this
 
-1. Give the **Assistant instructions** to any capable AI chat, once.
+1. Give the **Assistant instructions** to any capable AI chat, once. If the platform has a system/persona/custom-instructions slot separate from the chat itself, put it there so it persists without being re-sent every day.
 2. Set up triggers (next section): start with Tier 1 alarms; move to Tier 2 scheduled messages once the ritual survives a few real weeks.
 3. Replace bracketed parts with the reader's own variables and times.
+4. On an agent/assistant platform (Tier 2), read **Platform notes** below before wiring up the schedule — the failure modes there are specific to automated, memory-dependent setups.
 
 ## Trigger setup
 
@@ -24,6 +25,15 @@ Two tiers. The mechanism the book depends on is the prompt arriving on its own �
 **The two-phase rule.** Every scheduled run has two phases. Phase one: send the short trigger message and stop — do not do the work in the send. Phase two: when the user replies, process the reply per the loop instructions (morning → prioritized plan with time blocks; evening → scores plus the Evening Coach output; weekly → lock in the one change).
 
 The prompt must keep arriving on schedule whether or not the user answered the last one. That is the hospital-week property: the system keeps asking, on its own schedule, regardless of whether the user is in any state to have asked themselves. A missed day is not a failed system — the next prompt brings the reader back.
+
+## Platform notes
+
+These matter most on agent/assistant platforms that run the schedule themselves (Tier 2) rather than a phone-alarm-plus-chat setup, since they depend on the assistant actually remembering across separate, time-gapped turns.
+
+- **Persistent daily log, not chat history.** The Weekly prompt needs "the last seven daily reflections" to exist somewhere the assistant can read back reliably. If the platform's context resets between scheduled sends, have the assistant append one line per day — date, the 12 scores, and the one micro-habit assigned (see **Daily log entry** under the Evening Coach spec) — to whatever persistent store the platform offers: a note, canvas, or memory file. Read from that log, not from scrollback.
+- **Enforce the two-phase rule explicitly.** Left to its own judgment, a model will often "helpfully" do the scoring and coaching in the same turn it sends the trigger. Say it bluntly in the instructions: *on a scheduled trigger, send only the trigger line, verbatim, and stop — no scoring, no coaching, until the user replies.*
+- **No memory, no guessing.** If the assistant has no record of prior days — new session, memory unavailable, log empty — it should say so and ask the user to paste the last entry or a quick summary, never invent a pattern to fill the gap. This is the same "ground everything in what the user actually said" rule, extended to the assistant's own memory.
+- **Timezone anchor.** Tier 2's [time] placeholders are wall-clock times for the reader. State the reader's timezone once alongside them so the schedule doesn't drift across daylight-saving changes or if the platform schedules internally in UTC.
 
 ## The variables
 
@@ -92,6 +102,14 @@ Max ~150 words. Readable in 60 seconds on a phone. Three sections:
 
 Why this works: the coach's advice targets foundational habits — things worth doing daily no matter the score — so it functions as a thinking prompt, not a correction. The user stays the decider.
 
+### Daily log entry (for the weekly review)
+
+On Tier 2 (agent-run), after posting the Evening Coach output, append one line to the persistent daily log described in **Platform notes**:
+
+`[date] | [12 scores, in the order listed under The variables] | [the one micro-habit assigned]`
+
+The Weekly prompt reads this log back — not the raw conversation.
+
 ---
 
 ## Weekly prompt
@@ -117,6 +135,7 @@ A missed day is not a failed system. Let the next prompt bring you back. Do not 
 
 ## Changelog
 
+- **v0.4 — 2026-10-29:** Added a Platform notes section for agent/assistant setups (Tier 2): persistent daily log instead of relying on chat history, explicit enforcement of the two-phase rule, a no-memory-no-guessing fallback, and a timezone anchor for scheduled times. Added the Daily log entry format under the Evening Coach spec so the Weekly prompt has something structured to read back.
 - **v0.3 — 2026-09-28:** Added Trigger setup: Tier 1 (alarms) and Tier 2 (agent-run proactive scheduling) with the two-phase rule — send the trigger, then process the reply; the prompt keeps arriving whether or not the last one was answered (the hospital-week property). Tier 2 named the durable configuration, per the book's ch. 10 thesis. Fixed "Productivity and Output" to "Productivity / Output" to match the actual worksheet source (`scripts/generate_reflection_worksheet.py`).
 - **v0.2 — 2026-09-28:** Added the Evening Coach output format and its design rules (validate only genuine 8+ highs; advise on one foundational pillar; diagnostic question plus one micro-habit; propose, never prescribe; no fabricated citations; ~150-word cap).
 - **v0.1 — 2026-09-26:** Initial Morning / Evening / Weekly prompts from the Implementation Guide.
